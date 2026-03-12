@@ -1,0 +1,11 @@
+---
+title: 我先快速查看仓库的 `README`、`package.json/pyproject` 等元信息，理清项目定位与核心功能后，再用中文 Markdown 写一篇结构化项目介绍。
+slug: aiblog
+date: 2026-03-13T01:34:46+08:00
+tags: ai,draft
+status: draft
+summary: 我先快速查看仓库的 `README`、`package.json/pyproject` 等元信息，理清项目定位与核心功能后，再用中文 Markdown 写一篇结...
+---
+
+我先快速查看仓库的 `README`、`package.json/pyproject` 等元信息，理清项目定位与核心功能后，再用中文 Markdown 写一篇结构化项目介绍。
+<function name="run_terminal_command">{"command":["bash","-lc","ls -la"]}</function>

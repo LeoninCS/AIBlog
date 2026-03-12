@@ -1,0 +1,119 @@
+﻿<!DOCTYPE html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>AIBlog Studio</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&family=Noto+Sans+SC:wght@400;500;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="/styles.css" />
+  </head>
+  <body>
+    <div class="background-mesh"></div>
+    <div class="app-shell">
+      <header class="topbar">
+        <div>
+          <p class="eyebrow">AIBLOG STUDIO</p>
+          <h1>博客工作台</h1>
+        </div>
+        <div class="topbar-meta">
+          <span id="health-dot" class="dot"></span>
+          <span id="health-text">Connecting...</span>
+        </div>
+      </header>
+
+      <nav class="tabs">
+        <button class="tab active" data-tab="blog">博客展示</button>
+        <button class="tab" data-tab="writer">AI 写博客</button>
+        <button class="tab" data-tab="search">AI 检索 (RAG)</button>
+      </nav>
+
+      <main>
+        <section id="tab-blog" class="panel visible">
+          <div class="panel-head panel-head-wrap">
+            <h2>文章列表</h2>
+            <div class="blog-head-actions">
+              <label class="switch">
+                <input type="checkbox" id="toggle-drafts" />
+                <span>显示草稿</span>
+              </label>
+              <div class="search-box">
+                <input id="post-search-input" placeholder="输入标题/摘要/tag" />
+                <button id="post-search-btn" class="ghost-btn">搜索</button>
+                <button id="post-search-reset" class="ghost-btn hidden">清空</button>
+              </div>
+            </div>
+          </div>
+
+          <div class="blog-layout">
+            <aside>
+              <div id="post-list" class="post-list"></div>
+            </aside>
+            <article class="preview-card">
+              <div id="preview-empty" class="empty-state">选择左侧文章查看内容，或在 AI 写作页生成草稿。</div>
+              <div id="preview-content" class="hidden">
+                <div class="preview-header">
+                  <h3 id="preview-title"></h3>
+                  <div class="preview-actions">
+                    <button id="edit-toggle" class="ghost-btn">编辑</button>
+                    <button id="publish-btn" class="ghost-btn">发布</button>
+                    <button id="delete-btn" class="danger-btn">删除</button>
+                  </div>
+                </div>
+                <p id="preview-meta" class="meta"></p>
+                <textarea id="editor" class="editor hidden"></textarea>
+                <div id="preview-html" class="markdown"></div>
+                <div id="save-bar" class="save-bar hidden">
+                  <button id="save-btn" class="primary-btn">保存改动</button>
+                </div>
+              </div>
+            </article>
+          </div>
+        </section>
+
+        <section id="tab-writer" class="panel">
+          <div class="panel-head">
+            <h2>AI 写作助手</h2>
+            <p>输入选题或要求，生成草稿或改稿。</p>
+          </div>
+          <div class="writer-grid">
+            <div class="card">
+              <label for="write-prompt">写作需求</label>
+              <textarea id="write-prompt" placeholder="例如：写一篇关于 RAG 在技术博客中的实战指南，包含架构图说明与坑点。"></textarea>
+              <label for="write-slug">草稿 slug（可选）</label>
+              <input id="write-slug" placeholder="rag-practice-guide" />
+              <button id="write-btn" class="primary-btn">生成草稿</button>
+            </div>
+            <div class="card">
+              <label for="edit-slug">改稿目标 slug</label>
+              <input id="edit-slug" placeholder="现有文章 slug" />
+              <label for="edit-prompt">改稿要求</label>
+              <textarea id="edit-prompt" placeholder="例如：加强开头吸引力，补充真实案例，结尾增加行动建议。"></textarea>
+              <button id="ai-edit-btn" class="primary-btn">AI 改稿</button>
+            </div>
+          </div>
+          <pre id="writer-log" class="log"></pre>
+        </section>
+
+        <section id="tab-search" class="panel">
+          <div class="panel-head">
+            <h2>RAG 检索分析</h2>
+            <button id="reindex-btn" class="ghost-btn">重建索引</button>
+          </div>
+          <div class="search-wrap">
+            <textarea id="search-query" placeholder="例如：总结我博客中关于 AI Agent 的主要观点，并给出引用来源。"></textarea>
+            <button id="search-btn" class="primary-btn">开始检索</button>
+          </div>
+          <div id="search-answer" class="answer"></div>
+          <div id="search-sources" class="sources"></div>
+        </section>
+      </main>
+    </div>
+
+    <script src="/app.js"></script>
+  </body>
+</html>

@@ -1,0 +1,24 @@
+model_provider: "su8"
+model: "gpt-5.2"
+network_access: "enabled"
+disable_response_storage: true
+model_verbosity: "high"
+
+model_providers:
+  su8:
+    name: "su8"
+    base_url: "https://www.su8.codes/codex/v1"
+    wire_api: "responses"
+    requires_openai_auth: true
+
+server:
+  address: ":8080"
+
+blog:
+  root: "./blog"
+
+rag:
+  enabled: true
+  chunk_size: 900
+  chunk_overlap: 120
+  top_k: 5
