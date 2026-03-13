@@ -2,3 +2,24 @@
 data/
 bin/
 *.exe
+
+# Runtime logs
+logs/
+*.log
+
+# Local editor/history backups
+blog/.history/
+*.bak
+
+# Blog content stored locally only
+blog/posts/*
+blog/drafts/*
+blog/assets/*
+!blog/posts/.gitkeep
+!blog/drafts/.gitkeep
+!blog/assets/.gitkeep
+
+# OS/editor metadata
+.DS_Store
+.idea/
+.vscode/

@@ -22,6 +22,7 @@ type Result struct {
 	Query   string  `json:"query"`
 	Model   string  `json:"model"`
 	Summary string  `json:"summary"`
+	Intent  string  `json:"intent,omitempty"`
 }
 
 type Index struct {

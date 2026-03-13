@@ -1,8 +1,10 @@
-﻿const state = {
+const state = {
   posts: [],
   currentPost: null,
   editMode: false,
   postQuery: '',
+  inlineSelection: null,
+  sidebarCollapsed: false,
 };
 
 const el = {
@@ -15,15 +17,24 @@ const el = {
   healthDot: document.getElementById('health-dot'),
   healthText: document.getElementById('health-text'),
   toggleDrafts: document.getElementById('toggle-drafts'),
+  sidebarToggle: document.getElementById('sidebar-toggle'),
+  blogLayout: document.getElementById('blog-layout'),
+  contentDirectory: document.getElementById('content-directory'),
   postSearchInput: document.getElementById('post-search-input'),
   postSearchBtn: document.getElementById('post-search-btn'),
   postSearchReset: document.getElementById('post-search-reset'),
+  postCount: document.getElementById('post-count'),
   postList: document.getElementById('post-list'),
   previewEmpty: document.getElementById('preview-empty'),
   previewContent: document.getElementById('preview-content'),
   previewTitle: document.getElementById('preview-title'),
   previewMeta: document.getElementById('preview-meta'),
+  previewTags: document.getElementById('preview-tags'),
   previewHTML: document.getElementById('preview-html'),
+  inlineAIBar: document.getElementById('inline-ai-bar'),
+  inlineAISelection: document.getElementById('inline-ai-selection'),
+  inlineAIPrompt: document.getElementById('inline-ai-prompt'),
+  inlineAIRun: document.getElementById('inline-ai-run'),
   editor: document.getElementById('editor'),
   editToggle: document.getElementById('edit-toggle'),
   publishBtn: document.getElementById('publish-btn'),
@@ -47,6 +58,7 @@ const el = {
 init();
 
 function init() {
+  restoreSidebarState();
   bindTabs();
   bindEvents();
   healthCheck();
@@ -68,6 +80,7 @@ function bindTabs() {
 
 function bindEvents() {
   el.toggleDrafts.addEventListener('change', () => loadPosts());
+  el.sidebarToggle.addEventListener('click', toggleSidebar);
 
   el.postSearchBtn.addEventListener('click', () => {
     state.postQuery = el.postSearchInput.value.trim();
@@ -95,6 +108,9 @@ function bindEvents() {
   el.saveBtn.addEventListener('click', saveManualEdit);
   el.publishBtn.addEventListener('click', publishCurrent);
   el.deleteBtn.addEventListener('click', deleteCurrent);
+  el.editor.addEventListener('mouseup', captureEditorSelection);
+  el.editor.addEventListener('keyup', captureEditorSelection);
+  el.inlineAIRun.addEventListener('click', runInlineAIEdit);
 
   el.writeBtn.addEventListener('click', async () => {
     const text = el.writePrompt.value.trim();
@@ -110,7 +126,11 @@ function bindEvents() {
         method: 'POST',
         body: JSON.stringify({ mode: 'write', text, slug }),
       });
-      logWriter(`${resp.reply}\nslug: ${resp.post?.slug ?? '-'}\nfallback: ${resp.fallback}`);
+      logWriter(
+        `${resp.reply}\nslug: ${resp.post?.slug ?? '-'}\nfallback: ${resp.fallback}${
+          resp.fallback_reason ? `\nfallback_reason: ${resp.fallback_reason}` : ''
+        }`,
+      );
       await loadPosts();
       if (resp.post?.slug) {
         await selectPost(resp.post.slug);
@@ -134,7 +154,11 @@ function bindEvents() {
         method: 'POST',
         body: JSON.stringify({ mode: 'edit', slug, text }),
       });
-      logWriter(`${resp.reply}\nslug: ${resp.post?.slug ?? '-'}\nfallback: ${resp.fallback}`);
+      logWriter(
+        `${resp.reply}\nslug: ${resp.post?.slug ?? '-'}\nfallback: ${resp.fallback}${
+          resp.fallback_reason ? `\nfallback_reason: ${resp.fallback_reason}` : ''
+        }`,
+      );
       await loadPosts();
       await selectPost(slug);
     } catch (err) {
@@ -180,6 +204,7 @@ async function loadPosts() {
 
 function renderPostList() {
   el.postList.innerHTML = '';
+  el.postCount.textContent = `${state.posts.length} 篇内容`;
   if (!state.posts.length) {
     const tip = state.postQuery ? `未找到与「${escapeHtml(state.postQuery)}」相关的文章。` : '暂无文章。你可以先去 AI 写博客生成草稿。';
     el.postList.innerHTML = `<div class="empty-state">${tip}</div>`;
@@ -192,14 +217,48 @@ function renderPostList() {
     if (state.currentPost && state.currentPost.slug === post.slug) {
       div.classList.add('active');
     }
+    const status = escapeHtml(post.status || 'draft');
+    const summary = escapeHtml(shorten(getPostPreview(post), 15));
     div.innerHTML = `
       <h4>${escapeHtml(post.title)}</h4>
-      <p>${escapeHtml(post.summary || 'No summary')}</p>
-      <p>${formatDate(post.date)} · ${post.status || 'draft'}</p>
+      <p class="post-summary">${summary}</p>
+      <div class="post-meta-row">
+        <span class="post-date">${formatDate(post.date)}</span>
+        <span class="tag status-${status}">${status}</span>
+      </div>
     `;
     div.addEventListener('click', () => selectPost(post.slug));
     el.postList.appendChild(div);
   });
+}
+
+function toggleSidebar() {
+  state.sidebarCollapsed = !state.sidebarCollapsed;
+  syncSidebarState();
+}
+
+function restoreSidebarState() {
+  try {
+    state.sidebarCollapsed = window.localStorage.getItem('aiblog.sidebar.collapsed') === 'true';
+  } catch (_) {
+    state.sidebarCollapsed = false;
+  }
+  syncSidebarState();
+}
+
+function syncSidebarState() {
+  const collapsed = state.sidebarCollapsed;
+  el.blogLayout.classList.toggle('sidebar-collapsed', collapsed);
+  el.contentDirectory.classList.toggle('collapsed', collapsed);
+  el.sidebarToggle.innerHTML = `<span aria-hidden="true">${collapsed ? '→' : '←'}</span>`;
+  el.sidebarToggle.setAttribute('aria-expanded', String(!collapsed));
+  el.sidebarToggle.setAttribute('aria-label', collapsed ? '展开目录' : '收起目录');
+  el.sidebarToggle.setAttribute('title', collapsed ? '展开目录' : '收起目录');
+  try {
+    window.localStorage.setItem('aiblog.sidebar.collapsed', String(collapsed));
+  } catch (_) {
+    // no-op
+  }
 }
 
 async function selectPost(slug) {
@@ -222,26 +281,125 @@ function renderCurrentPost() {
   el.previewContent.classList.remove('hidden');
   el.previewTitle.textContent = p.title || p.slug;
   el.previewMeta.textContent = `${formatDate(p.date)} · ${p.status || 'draft'} · ${p.slug}`;
+  renderPreviewTags(p.tags || []);
+  el.publishBtn.classList.toggle('hidden', (p.status || '').toLowerCase() === 'published');
   el.editor.value = p.body || '';
   el.previewHTML.innerHTML = p.html || '';
+  resetInlineAI();
 
   if (state.editMode) {
     el.editor.classList.remove('hidden');
     el.previewHTML.classList.add('hidden');
+    el.inlineAIBar.classList.remove('hidden');
     el.saveBar.classList.remove('hidden');
     el.editToggle.textContent = '取消编辑';
   } else {
     el.editor.classList.add('hidden');
     el.previewHTML.classList.remove('hidden');
+    el.inlineAIBar.classList.add('hidden');
     el.saveBar.classList.add('hidden');
     el.editToggle.textContent = '编辑';
   }
+}
+
+function renderPreviewTags(tags) {
+  if (!tags.length) {
+    el.previewTags.innerHTML = '';
+    el.previewTags.classList.add('hidden');
+    return;
+  }
+
+  el.previewTags.innerHTML = tags.map((tag) => `<span class="tag">${escapeHtml(tag)}</span>`).join('');
+  el.previewTags.classList.remove('hidden');
 }
 
 function toggleEditMode() {
   if (!state.currentPost) return;
   state.editMode = !state.editMode;
   renderCurrentPost();
+}
+
+function captureEditorSelection() {
+  if (!state.editMode) return;
+
+  const start = el.editor.selectionStart;
+  const end = el.editor.selectionEnd;
+  if (start == null || end == null || start === end) {
+    state.inlineSelection = null;
+    el.inlineAISelection.textContent = '选中文字后，可直接让 AI 帮你改写。';
+    return;
+  }
+
+  const selected = el.editor.value.slice(start, end);
+  state.inlineSelection = { start, end, selected };
+  el.inlineAISelection.textContent = `已选中 ${selected.length} 个字符：${shorten(selected.replace(/\s+/g, ' ').trim(), 42)}`;
+}
+
+async function runInlineAIEdit() {
+  if (!state.currentPost || !state.editMode) return;
+  if (!state.inlineSelection?.selected) {
+    alert('请先在编辑器里选中一段文本。');
+    return;
+  }
+
+  const prompt = el.inlineAIPrompt.value.trim();
+  if (!prompt) {
+    alert('请先输入你希望 AI 如何修改这段内容。');
+    return;
+  }
+
+  const { start, end, selected } = state.inlineSelection;
+  const context = buildInlineContext(el.editor.value, start, end);
+  const originalLabel = el.inlineAIRun.textContent;
+  el.inlineAIRun.disabled = true;
+  el.inlineAIRun.textContent = 'AI 修改中...';
+
+  try {
+    const resp = await request('/api/agent/chat', {
+      method: 'POST',
+      body: JSON.stringify({
+        mode: 'inline-edit',
+        slug: state.currentPost.slug,
+        text: prompt,
+        selected,
+        context,
+      }),
+    });
+
+    replaceEditorSelection(start, end, (resp.reply || selected).trim());
+    el.inlineAIPrompt.value = '';
+  } catch (err) {
+    alert(`AI 修改失败: ${err.message}`);
+  } finally {
+    el.inlineAIRun.disabled = false;
+    el.inlineAIRun.textContent = originalLabel;
+  }
+}
+
+function replaceEditorSelection(start, end, replacement) {
+  const value = el.editor.value;
+  el.editor.value = `${value.slice(0, start)}${replacement}${value.slice(end)}`;
+  const nextEnd = start + replacement.length;
+  el.editor.focus();
+  el.editor.setSelectionRange(start, nextEnd);
+  state.inlineSelection = {
+    start,
+    end: nextEnd,
+    selected: replacement,
+  };
+  el.inlineAISelection.textContent = `AI 已替换选中内容，共 ${replacement.length} 个字符。`;
+}
+
+function buildInlineContext(text, start, end) {
+  const before = text.slice(Math.max(0, start - 240), start).trim();
+  const after = text.slice(end, Math.min(text.length, end + 240)).trim();
+  return `前文：\n${before}\n\n后文：\n${after}`.trim();
+}
+
+function resetInlineAI() {
+  state.inlineSelection = null;
+  el.inlineAIPrompt.value = '';
+  el.inlineAISelection.textContent = '选中文字后，可直接让 AI 帮你改写。';
 }
 
 async function saveManualEdit() {
@@ -352,9 +510,12 @@ function renderSources(chunks) {
     .map(
       (c, idx) => `
       <div class="sources-item">
-        <strong>${idx + 1}. ${escapeHtml(c.title || c.slug)}</strong>
-        <div>path: ${escapeHtml(c.path || '')} · score: ${(c.score || 0).toFixed(2)}</div>
-        <p>${escapeHtml(shorten(c.text || '', 240))}</p>
+        <div class="source-title">
+          <strong>${idx + 1}. ${escapeHtml(c.title || c.slug)}</strong>
+          <span class="source-score">score ${(c.score || 0).toFixed(2)}</span>
+        </div>
+        <div class="source-path">${escapeHtml(c.path || '')}</div>
+        <p class="source-text">${escapeHtml(shorten(c.text || '', 240))}</p>
       </div>
     `,
     )
@@ -404,6 +565,47 @@ function formatDate(dateStr) {
 function shorten(text, n) {
   if (text.length <= n) return text;
   return `${text.slice(0, n)}...`;
+}
+
+function getPostPreview(post) {
+  const summary = normalizePreviewText(post.summary || '');
+  if (summary) {
+    return summary;
+  }
+  return '暂无简介';
+}
+
+function normalizePreviewText(input) {
+  if (!input) return '';
+  let text = String(input)
+    .replace(/^---[\s\S]*?---/, ' ')
+    .replace(/```[\s\S]*?```/g, ' ')
+    .replace(/^>\s?/gm, ' ')
+    .replace(/^\s*[-=]{3,}\s*$/gm, ' ')
+    .replace(/`([^`]+)`/g, '$1')
+    .replace(/\*\*([^*]+)\*\*/g, '$1')
+    .replace(/\*([^*]+)\*/g, '$1')
+    .replace(/__([^_]+)__/g, '$1')
+    .replace(/_([^_]+)_/g, '$1')
+    .replace(/~~([^~]+)~~/g, '$1')
+    .replace(/!\[[^\]]*]\([^)]+\)/g, ' ')
+    .replace(/\[[^\]]+]\([^)]+\)/g, '$1')
+    .replace(/^#{1,6}\s+/gm, ' ')
+    .replace(/^\s*\[[ xX]\]\s+/gm, ' ')
+    .replace(/^\s*[-*+]\s+/gm, ' ')
+    .replace(/^\s*\d+\.\s+/gm, ' ')
+    .replace(/^\s*\d+\)\s+/gm, ' ')
+    .replace(/\|/g, ' ')
+    .replace(/[>#*_~]+/g, ' ')
+    .replace(/\n+/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+
+  const firstSentence = text.split(/[。！？!?]/).find((part) => part.trim().length > 0);
+  if (firstSentence && firstSentence.trim().length >= 10) {
+    text = firstSentence.trim();
+  }
+  return text;
 }
 
 function escapeHtml(input) {

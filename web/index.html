@@ -13,16 +13,25 @@
     <link rel="stylesheet" href="/styles.css" />
   </head>
   <body>
+    <div class="ambient ambient-a"></div>
+    <div class="ambient ambient-b"></div>
     <div class="background-mesh"></div>
     <div class="app-shell">
       <header class="topbar">
-        <div>
+        <div class="brand-block">
           <p class="eyebrow">AIBLOG STUDIO</p>
-          <h1>博客工作台</h1>
+          <div class="brand-title">
+            <h1>博客工作台</h1>
+            <span class="brand-chip">Editorial Console</span>
+          </div>
+          <p class="topbar-copy">围绕写作、编辑与检索，构建统一而舒适的内容创作空间。</p>
         </div>
         <div class="topbar-meta">
-          <span id="health-dot" class="dot"></span>
-          <span id="health-text">Connecting...</span>
+          <div class="status-badge">
+            <span id="health-dot" class="dot"></span>
+            <span id="health-text">Connecting...</span>
+          </div>
+          <p class="topbar-note">Quiet interface, focused thinking.</p>
         </div>
       </header>
 
@@ -35,12 +44,19 @@
       <main>
         <section id="tab-blog" class="panel visible">
           <div class="panel-head panel-head-wrap">
-            <h2>文章列表</h2>
+            <div class="section-intro">
+              <p class="section-kicker">Content Library</p>
+              <h2>文章列表</h2>
+              <p>在同一界面浏览、编辑和发布内容，让每篇文章都保持清晰的状态与节奏。</p>
+            </div>
             <div class="blog-head-actions">
-              <label class="switch">
-                <input type="checkbox" id="toggle-drafts" />
-                <span>显示草稿</span>
-              </label>
+              <div class="toolbar-group">
+                <span id="post-count" class="metric-chip">0 篇内容</span>
+                <label class="switch">
+                  <input type="checkbox" id="toggle-drafts" />
+                  <span>显示草稿</span>
+                </label>
+              </div>
               <div class="search-box">
                 <input id="post-search-input" placeholder="输入标题/摘要/tag" />
                 <button id="post-search-btn" class="ghost-btn">搜索</button>
@@ -49,22 +65,56 @@
             </div>
           </div>
 
-          <div class="blog-layout">
-            <aside>
+          <div id="blog-layout" class="blog-layout">
+            <aside id="content-directory" class="sidebar-card">
+              <div class="sidebar-head">
+                <div class="sidebar-title-group">
+                  <p class="section-kicker">Library</p>
+                  <h3>内容目录</h3>
+                </div>
+                <button
+                  id="sidebar-toggle"
+                  class="ghost-btn sidebar-toggle-btn"
+                  type="button"
+                  aria-expanded="true"
+                  aria-controls="post-list"
+                  aria-label="收起目录"
+                  title="收起目录"
+                >
+                  <span aria-hidden="true">←</span>
+                </button>
+              </div>
               <div id="post-list" class="post-list"></div>
             </aside>
             <article class="preview-card">
-              <div id="preview-empty" class="empty-state">选择左侧文章查看内容，或在 AI 写作页生成草稿。</div>
+              <div id="preview-empty" class="empty-state empty-state-large">
+                <p class="empty-title">还没有选中文章</p>
+                <p>从左侧内容目录选择一篇文章开始浏览，或者前往 AI 写作页生成新的草稿。</p>
+              </div>
               <div id="preview-content" class="hidden">
                 <div class="preview-header">
-                  <h3 id="preview-title"></h3>
+                  <div class="preview-heading">
+                    <p class="section-kicker">Preview</p>
+                    <h3 id="preview-title"></h3>
+                    <p id="preview-meta" class="meta"></p>
+                    <div id="preview-tags" class="tag-row hidden"></div>
+                  </div>
                   <div class="preview-actions">
                     <button id="edit-toggle" class="ghost-btn">编辑</button>
                     <button id="publish-btn" class="ghost-btn">发布</button>
                     <button id="delete-btn" class="danger-btn">删除</button>
                   </div>
                 </div>
-                <p id="preview-meta" class="meta"></p>
+                <div id="inline-ai-bar" class="inline-ai-bar hidden">
+                  <div class="inline-ai-head">
+                    <p class="section-kicker">Inline AI</p>
+                    <p id="inline-ai-selection" class="inline-ai-selection">选中文字后，可直接让 AI 帮你改写。</p>
+                  </div>
+                  <div class="inline-ai-controls">
+                    <input id="inline-ai-prompt" placeholder="例如：更专业一些 / 精简成两句话 / 改成更有吸引力的开头" />
+                    <button id="inline-ai-run" class="primary-btn">AI 修改选中内容</button>
+                  </div>
+                </div>
                 <textarea id="editor" class="editor hidden"></textarea>
                 <div id="preview-html" class="markdown"></div>
                 <div id="save-bar" class="save-bar hidden">
@@ -76,19 +126,31 @@
         </section>
 
         <section id="tab-writer" class="panel">
-          <div class="panel-head">
-            <h2>AI 写作助手</h2>
-            <p>输入选题或要求，生成草稿或改稿。</p>
+          <div class="panel-head panel-head-wrap">
+            <div class="section-intro">
+              <p class="section-kicker">AI Writer</p>
+              <h2>AI 写作助手</h2>
+              <p>从选题到改稿，保持统一语气、清晰结构与稳定的输出节奏。</p>
+            </div>
           </div>
           <div class="writer-grid">
-            <div class="card">
+            <div class="card card-emphasis">
+              <div class="card-head">
+                <h3>生成草稿</h3>
+                <p>适合快速起稿、搭框架或生成完整首版。</p>
+              </div>
               <label for="write-prompt">写作需求</label>
               <textarea id="write-prompt" placeholder="例如：写一篇关于 RAG 在技术博客中的实战指南，包含架构图说明与坑点。"></textarea>
+              <p class="field-hint">补充目标读者、风格、结构要求，通常能得到更稳定的结果。</p>
               <label for="write-slug">草稿 slug（可选）</label>
               <input id="write-slug" placeholder="rag-practice-guide" />
               <button id="write-btn" class="primary-btn">生成草稿</button>
             </div>
             <div class="card">
+              <div class="card-head">
+                <h3>智能改稿</h3>
+                <p>对已有文章做增强、压缩、重构或风格统一。</p>
+              </div>
               <label for="edit-slug">改稿目标 slug</label>
               <input id="edit-slug" placeholder="现有文章 slug" />
               <label for="edit-prompt">改稿要求</label>
@@ -96,20 +158,48 @@
               <button id="ai-edit-btn" class="primary-btn">AI 改稿</button>
             </div>
           </div>
-          <pre id="writer-log" class="log"></pre>
+          <div class="log-card">
+            <div class="card-head">
+              <h3>操作记录</h3>
+              <p>保留生成与改稿过程中的关键反馈，便于快速回看。</p>
+            </div>
+            <pre id="writer-log" class="log"></pre>
+          </div>
         </section>
 
         <section id="tab-search" class="panel">
-          <div class="panel-head">
-            <h2>RAG 检索分析</h2>
+          <div class="panel-head panel-head-wrap">
+            <div class="section-intro">
+              <p class="section-kicker">Knowledge Search</p>
+              <h2>RAG 检索分析</h2>
+              <p>围绕博客内容做结构化检索，让答案与引用来源同时清晰可见。</p>
+            </div>
             <button id="reindex-btn" class="ghost-btn">重建索引</button>
           </div>
           <div class="search-wrap">
             <textarea id="search-query" placeholder="例如：总结我博客中关于 AI Agent 的主要观点，并给出引用来源。"></textarea>
             <button id="search-btn" class="primary-btn">开始检索</button>
           </div>
-          <div id="search-answer" class="answer"></div>
-          <div id="search-sources" class="sources"></div>
+          <div class="search-results">
+            <div class="result-card">
+              <div class="card-head">
+                <h3>检索答案</h3>
+                <p>优先展示归纳结果，方便快速浏览与继续追问。</p>
+              </div>
+              <div id="search-answer" class="answer">
+                <div class="empty-state">输入问题后，答案会显示在这里。</div>
+              </div>
+            </div>
+            <div class="result-card">
+              <div class="card-head">
+                <h3>引用来源</h3>
+                <p>保留相关片段、路径与分数，帮助判断答案的可信度。</p>
+              </div>
+              <div id="search-sources" class="sources">
+                <div class="empty-state">检索后会展示对应来源片段。</div>
+              </div>
+            </div>
+          </div>
         </section>
       </main>
     </div>

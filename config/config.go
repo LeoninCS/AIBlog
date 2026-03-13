@@ -16,6 +16,8 @@ type ModelProvider struct {
 	BaseURL            string `yaml:"base_url"`
 	WireAPI            string `yaml:"wire_api"`
 	RequiresOpenAIAuth bool   `yaml:"requires_openai_auth"`
+	TimeoutSeconds     int    `yaml:"timeout_seconds"`
+	MaxRetries         int    `yaml:"max_retries"`
 }
 
 type ServerConfig struct {
@@ -55,6 +57,8 @@ func Default() Config {
 				BaseURL:            "https://www.su8.codes/codex/v1",
 				WireAPI:            "responses",
 				RequiresOpenAIAuth: true,
+				TimeoutSeconds:     120,
+				MaxRetries:         1,
 			},
 		},
 		Server: ServerConfig{
@@ -128,6 +132,15 @@ func (c *Config) ActiveProvider() (ModelProvider, error) {
 		return ModelProvider{}, fmt.Errorf("model provider %q is not configured", c.ModelProvider)
 	}
 	provider.BaseURL = strings.TrimRight(provider.BaseURL, "/")
+	if provider.WireAPI == "" {
+		provider.WireAPI = "responses"
+	}
+	if provider.TimeoutSeconds <= 0 {
+		provider.TimeoutSeconds = 120
+	}
+	if provider.MaxRetries < 0 {
+		provider.MaxRetries = 0
+	}
 	return provider, nil
 }
 

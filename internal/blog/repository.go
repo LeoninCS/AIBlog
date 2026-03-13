@@ -134,6 +134,32 @@ func (r *Repository) GetBySlug(slug string) (*Post, error) {
 	return nil, os.ErrNotExist
 }
 
+func (r *Repository) NextAvailableSlug(slug string) (string, error) {
+	base := sanitizeSlug(slug)
+	if base == "" {
+		base = fmt.Sprintf("post-%d", time.Now().Unix())
+	}
+
+	exists, err := r.slugExists(base)
+	if err != nil {
+		return "", err
+	}
+	if !exists {
+		return base, nil
+	}
+
+	for idx := 2; ; idx++ {
+		candidate := fmt.Sprintf("%s-%d", base, idx)
+		exists, err := r.slugExists(candidate)
+		if err != nil {
+			return "", err
+		}
+		if !exists {
+			return candidate, nil
+		}
+	}
+}
+
 func (r *Repository) Save(input *Post, expectedVersion string) (*Post, error) {
 	if err := r.EnsureStructure(); err != nil {
 		return nil, err
@@ -306,4 +332,20 @@ func matchesAnyTerm(haystack string, terms []string) bool {
 		}
 	}
 	return false
+}
+
+func (r *Repository) slugExists(slug string) (bool, error) {
+	candidates := []string{
+		filepath.Join(r.root, "posts", slug+".md"),
+		filepath.Join(r.root, "drafts", slug+".md"),
+	}
+
+	for _, path := range candidates {
+		if _, err := os.Stat(path); err == nil {
+			return true, nil
+		} else if !errors.Is(err, os.ErrNotExist) {
+			return false, err
+		}
+	}
+	return false, nil
 }
